@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HUTECH TKB Parser — delulu.vn</title>
+<meta name="description" content="Chuyển thời khóa biểu PDF HUTECH thành bảng Google Sheet trong 10 giây, dùng Gemini AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --cream: #faf7f2;
+    --cream-card: #fff9f0;
+    --cream-hover: #f5efe4;
+    --plum: #4a1f3a;
+    --plum-soft: #6b3657;
+    --gold: #c9a961;
+    --gold-dark: #a8894a;
+    --gray: #6b5d54;
+    --gray-soft: #9e9389;
+    --border: #e5ddd0;
+    --green: #5a7a4e;
+    --red: #a84545;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Be Vietnam Pro', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    font-weight: 400;
+    color: var(--plum);
+    background: var(--cream);
+    line-height: 1.65;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+
+  /* ---------- HEADER ---------- */
+  header {
+    text-align: center;
+    padding: 2rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+    position: relative;
+  }
+  header::after {
+    content: "";
+    position: absolute; left: 50%; bottom: -1px;
+    width: 60px; height: 2px; background: var(--gold);
+    transform: translateX(-50%);
+  }
+  .brand-tag {
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1.1;
+    color: var(--plum);
+    margin-bottom: 0.75rem;
+  }
+  h1 em { color: var(--gold-dark); font-style: italic; }
+  .tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--gray);
+    max-width: 580px;
+    margin: 0 auto;
+  }
+
+  /* ---------- SECTIONS ---------- */
+  section {
+    margin-bottom: 2.5rem;
+    background: var(--cream-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2rem;
+    position: relative;
+  }
+  .step-num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--gold-dark);
+    margin-bottom: 0.25rem;
+  }
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  .section-desc {
+    color: var(--gray);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ---------- API KEY ---------- */
+  .key-wrap {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  input[type="password"], input[type="text"] {
+    flex: 1;
+    padding: 0.85rem 1rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: #fff;
+    color: var(--plum);
+    transition: border-color 0.2s;
+  }
+  input:focus { outline: none; border-color: var(--gold); }
+  .key-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.9rem;
+  }
+  .key-status-left { display: flex; align-items: center; gap: 0.6rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .key-get-link {
+    display: inline-block;
+    color: var(--gold-dark);
+    text-decoration: underline;
+    text-decoration-color: var(--gold);
+    text-underline-offset: 3px;
+    font-size: 0.88rem;
+    margin-top: 0.75rem;
+  }
+  .key-get-link:hover { color: var(--plum); }
+
+  /* ---------- BUTTONS ---------- */
+  button {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.85rem 1.5rem;
+    border: 1px solid var(--plum);
+    border-radius: 3px;
+    background: var(--plum);
+    color: var(--cream);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--plum-soft); transform: translateY(-1px); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  button.ghost { background: transparent; color: var(--plum); }
+  button.ghost:hover { background: var(--cream-hover); }
+  button.gold {
+    background: var(--gold); border-color: var(--gold); color: #fff;
+  }
+  button.gold:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+  button.small { padding: 0.5rem 1rem; font-size: 0.82rem; }
+
+  /* ---------- DROPZONE ---------- */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--gold);
+    background: var(--cream-hover);
+  }
+  .dropzone.disabled { opacity: 0.4; pointer-events: none; }
+  .dropzone-icon {
+    font-family: var(--serif);
+    font-size: 3rem;
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .dropzone-title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+  .dropzone-hint { color: var(--gray); font-size: 0.88rem; }
+  input[type="file"] { display: none; }
+
+  /* ---------- STATUS / PROGRESS ---------- */
+  .status {
+    margin-top: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 3px;
+    border-left: 3px solid var(--gold);
+    background: var(--cream-hover);
+    font-size: 0.9rem;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.error { border-left-color: var(--red); background: #fef0f0; color: var(--red); }
+  .status.success { border-left-color: var(--green); background: #f0f7ee; color: var(--green); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--gold);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- RESULTS TABLE ---------- */
+  #results { display: none; }
+  #results.show { display: block; }
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .result-count {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--plum);
+  }
+  .result-count strong { font-size: 1.5rem; color: var(--gold-dark); font-weight: 600; }
+  .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  .usage-tip {
+    margin-bottom: 1rem;
+    padding: 0.9rem 1.1rem;
+    background: #fff9e8;
+    border-left: 3px solid var(--gold);
+    border-radius: 3px;
+    font-size: 0.85rem;
+    color: var(--plum-soft);
+    line-height: 1.6;
+  }
+  .usage-tip strong { color: var(--plum); }
+  .usage-tip code {
+    background: var(--cream-hover);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: #fff;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th {
+    background: var(--plum);
+    color: var(--cream);
+    padding: 0.75rem 0.6rem;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    position: sticky; top: 0;
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.5rem 0.6rem;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #fdfaf4; }
+  tr:hover td { background: var(--cream-hover); }
+  td[contenteditable="true"] {
+    cursor: text;
+    min-width: 80px;
+  }
+  td[contenteditable="true"]:focus {
+    outline: 1px solid var(--gold);
+    background: #fffef5 !important;
+  }
+  .row-del {
+    background: transparent;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.4;
+  }
+  .row-del:hover { opacity: 1; transform: none; background: transparent; }
+
+  /* ---------- FOOTER ---------- */
+  footer {
+    text-align: center;
+    padding: 3rem 1rem 1rem;
+    color: var(--gray);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+  footer a { color: var(--gold-dark); text-decoration: none; border-bottom: 1px dotted var(--gold); }
+  footer em { font-family: var(--serif); font-style: italic; }
+
+  /* ---------- TOAST ---------- */
+  #toast {
+    position: fixed;
+    bottom: 2rem; right: 2rem;
+    background: var(--plum);
+    color: var(--cream);
+    padding: 0.85rem 1.25rem;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    box-shadow: 0 4px 20px rgba(74, 31, 58, 0.2);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    body { padding: 1rem 0.5rem; }
+    section { padding: 1.5rem 1rem; }
+    .key-wrap { flex-direction: column; }
+    .dropzone { padding: 2rem 1rem; }
+    #toast { left: 1rem; right: 1rem; bottom: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="brand-tag">delulu.vn · công cụ học vụ</div>
+  <h1>Chuyển <em>TKB HUTECH</em> từ PDF sang Sheet</h1>
+  <p class="tagline">Kéo file PDF lịch học vào ô bên dưới. Gemini AI bóc tách thành bảng Google Sheet chuẩn. Mười giây.</p>
+</header>
+
+<!-- STEP 1: API KEY -->
+<section id="key-section">
+  <div class="step-num">Bước 1</div>
+  <h2>Gemini API Key</h2>
+  <p class="section-desc">Key được lưu trong trình duyệt của bạn, không gửi về máy chủ nào. Chỉ bạn thấy.</p>
+
+  <div id="key-input-wrap" class="key-wrap">
+    <input type="password" id="api-key" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
+    <button id="save-key">Lưu Key</button>
+  </div>
+
+  <div id="key-saved-wrap" class="key-status" style="display:none;">
+    <div class="key-status-left">
+      <span class="dot"></span>
+      <span>Đã lưu key: <strong id="key-preview"></strong></span>
+    </div>
+    <button class="ghost small" id="change-key">Đổi key</button>
+  </div>
+
+  <a href="https://aistudio.google.com/app/apikey" target="_blank" class="key-get-link">
+    → Lấy API key miễn phí tại Google AI Studio
+  </a>
+</section>
+
+<!-- STEP 2: UPLOAD -->
+<section>
+  <div class="step-num">Bước 2</div>
+  <h2>Tải lên file PDF</h2>
+  <p class="section-desc">File TKB tuần (có ngày đầy đủ) hoặc TKB học kỳ. Hỗ trợ cả bản cắt cột.</p>
+
+  <label for="pdf-file" class="dropzone" id="dropzone">
+    <div class="dropzone-icon">+</div>
+    <div class="dropzone-title">Kéo file PDF vào đây</div>
+    <div class="dropzone-hint">hoặc bấm để chọn file · tối đa 20 MB</div>
+  </label>
+  <input type="file" id="pdf-file" accept="application/pdf">
+
+  <div class="status" id="status"></div>
+</section>
+
+<!-- STEP 3: RESULTS -->
+<section id="results">
+  <div class="step-num">Bước 3</div>
+  <h2>Xem trước & xuất dữ liệu</h2>
+  <p class="section-desc">Click trực tiếp vào ô để sửa. Sau khi ưng, bấm Copy để paste vào Google Sheet.</p>
+
+  <div class="results-header">
+    <div class="result-count"><strong id="count">0</strong> buổi học</div>
+    <div class="actions">
+      <button class="ghost small" id="add-row">+ Thêm dòng</button>
+      <button class="ghost small" id="copy-tsv" title="Copy sang clipboard, paste vào Sheet">📋 Copy</button>
+      <button class="ghost small" id="download-csv" title="File .csv dự phòng">↓ CSV</button>
+      <button class="gold small" id="download-xlsx">↓ Tải Excel (.xlsx)</button>
+    </div>
+  </div>
+
+  <div class="usage-tip">
+    <strong>Cách dùng file Excel:</strong> tải về → mở bằng Google Sheet
+    (Drive → right-click → Open with Google Sheets) → Ctrl+A dòng 2 trở đi → Ctrl+C →
+    sang Sheet <code>LichHoc</code> chính, click ô B hàng trống đầu tiên → Ctrl+V.
+    File đã đúng 14 cột, dòng header chỉ để đối chiếu.
+  </div>
+
+  <div class="table-wrap">
+    <table id="result-table">
+      <thead>
+        <tr>
+          <th>Mã MH</th>
+          <th>Tên môn học</th>
+          <th>Nhóm</th>
+          <th>Số TC</th>
+          <th>Giảng viên</th>
+          <th>Loại</th>
+          <th>Ngày bắt đầu</th>
+          <th>Ngày kết thúc</th>
+          <th>Tiết</th>
+          <th>Phòng</th>
+          <th>Ghi chú</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="result-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <em>HUTECH TKB Parser</em> · thuộc hệ sinh thái công cụ học vụ của
+  <a href="https://delulu.vn" target="_blank">delulu.vn</a><br>
+  Bạn cùng lớp muốn dùng chung? Chia sẻ link này. Mỗi người tự lấy key Gemini miễn phí.
+</footer>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ============== STATE ==============
+  const KEY_STORAGE = "hutech_gemini_key";
+  let currentResults = [];
+
+  // ============== API KEY HANDLING ==============
+  const apiKeyInput = document.getElementById("api-key");
+  const saveKeyBtn = document.getElementById("save-key");
+  const keyInputWrap = document.getElementById("key-input-wrap");
+  const keySavedWrap = document.getElementById("key-saved-wrap");
+  const keyPreview = document.getElementById("key-preview");
+  const changeKeyBtn = document.getElementById("change-key");
+
+  function showSavedKey(key) {
+    const preview = key.substring(0, 6) + "..." + key.substring(key.length - 4);
+    keyPreview.textContent = preview;
+    keyInputWrap.style.display = "none";
+    keySavedWrap.style.display = "flex";
+  }
+
+  function getKey() {
+    return localStorage.getItem(KEY_STORAGE);
+  }
+
+  // Load key on startup
+  const savedKey = getKey();
+  if (savedKey) showSavedKey(savedKey);
+
+  saveKeyBtn.addEventListener("click", () => {
+    const key = apiKeyInput.value.trim();
+    if (!key || key.length < 20) {
+      toast("Key không hợp lệ", "error");
+      return;
+    }
+    localStorage.setItem(KEY_STORAGE, key);
+    showSavedKey(key);
+    toast("Đã lưu key vào trình duyệt");
+    apiKeyInput.value = "";
+  });
+
+  changeKeyBtn.addEventListener("click", () => {
+    keyInputWrap.style.display = "flex";
+    keySavedWrap.style.display = "none";
+    apiKeyInput.focus();
+  });
+
+  // ============== FILE UPLOAD ==============
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("pdf-file");
+  const statusEl = document.getElementById("status");
+
+  ["dragover", "dragenter"].forEach(evt => {
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.add("drag");
+    });
+  });
+  ["dragleave", "drop"].forEach(evt => {
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.remove("drag");
+    });
+  });
+  dropzone.addEventListener("drop", e => {
+    const files = e.dataTransfer.files;
+    if (files[0]) handleFile(files[0]);
+  });
+  fileInput.addEventListener("change", e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  async function handleFile(file) {
+    if (file.type !== "application/pdf") {
+      setStatus("File phải là PDF", "error");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setStatus("File quá 20 MB, không gửi được", "error");
+      return;
+    }
+    const key = getKey();
+    if (!key) {
+      setStatus("Chưa có API key. Điền ở Bước 1.", "error");
+      return;
+    }
+
+    setStatus(`<span class="spinner"></span>Đang gửi ${file.name} cho Gemini phân tích...`);
+
+    try {
+      const base64 = await fileToBase64(file);
+      const rows = await callGemini(base64, key);
+      currentResults = rows;
+      renderTable(rows);
+      setStatus(`Đã parse ${rows.length} buổi học từ <strong>${file.name}</strong>. Xem bên dưới để chỉnh sửa.`, "success");
+    } catch (err) {
+      console.error(err);
+      setStatus("Lỗi: " + err.message, "error");
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = () => reject(new Error("Đọc file thất bại"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setStatus(html, kind) {
+    statusEl.className = "status show" + (kind ? " " + kind : "");
+    statusEl.innerHTML = html;
+  }
+
+  // ============== GEMINI CALL ==============
+  const CURRENT_YEAR = new Date().getFullYear();
+  const YEAR_FOR_EARLY = new Date().getMonth() >= 8 ? CURRENT_YEAR + 1 : CURRENT_YEAR;
+
+  async function callGemini(base64, key) {
+    const prompt =
+`Bạn là parser thời khóa biểu HUTECH. File PDF đính kèm là TKB tuần hoặc học kỳ cao học.
+
+QUY TẮC GIỜ TIẾT (mỗi tiết 45 phút):
+T1=06:45, T2=07:30, T3=08:15, (nghỉ 15p), T4=09:20, T5=10:05, T6=10:50
+T7=12:30, T8=13:15, T9=14:00, (nghỉ 20p), T10=15:05, T11=15:50, T12=16:35
+T13=18:00, T14=18:45, T15=19:30, T16=20:15, T17=21:00, T18=21:45
+Giờ KẾT THÚC = giờ BẮT ĐẦU của tiết cuối + 45 phút.
+
+NĂM MẶC ĐỊNH: tháng 1-8 thì năm ${YEAR_FOR_EARLY}, tháng 9-12 thì năm ${YEAR_FOR_EARLY - 1}.
+
+PHÂN BIỆT 2 LOẠI PDF:
+• TKB TUẦN: có header "Thứ 2 (13/04) Thứ 3 (14/04)..." → ghi đầy đủ ngày cho MỖI buổi xuất hiện trong tuần
+• TKB HỌC KỲ: bảng liệt kê môn với cột Ngày bị cắt → để ngayBD và ngayKT = "" (trống)
+
+ĐỊNH DẠNG OUTPUT — JSON array thuần:
+[{
+  "maMH": "GLAW104",
+  "tenMH": "Phương pháp nghiên cứu khoa học trong Luật Kinh tế",
+  "nhom": "01",
+  "soTC": 3,
+  "gv": "Phan Minh Phụng",
+  "phong": "B-10.01",
+  "ngayBD": "13/04/${YEAR_FOR_EARLY} 18:00",
+  "ngayKT": "13/04/${YEAR_FOR_EARLY} 20:15",
+  "tiet": "T13-T15",
+  "loai": "Dạy bù",
+  "ghiChu": "Học online"
+}]
+
+QUY TẮC ĐẶC BIỆT:
+• "loai" mặc định "Học chính thức". Nếu thấy "Dạy bù" → "Dạy bù"
+• Phòng chứa "Online" hoặc "S030" → phong="Online-S030", ghiChu="Học online"
+• Mỗi BUỔI HỌC = 1 phần tử JSON
+• KHÔNG gộp nhiều buổi thành 1
+
+Parse file PDF ngay. Chỉ trả JSON array.`;
+
+    const body = {
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: "application/pdf", data: base64 } },
+          { text: prompt }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status} — ${errText.substring(0, 200)}`);
+    }
+
+    const data = await res.json();
+    if (!data.candidates || !data.candidates[0]) throw new Error("Gemini không trả kết quả");
+    let text = data.candidates[0].content.parts[0].text.trim();
+    text = text.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    const arr = JSON.parse(text);
+    if (!Array.isArray(arr)) throw new Error("Kết quả không phải JSON array");
+    return arr;
+  }
+
+  // ============== RENDER TABLE ==============
+  const resultsEl = document.getElementById("results");
+  const tbody = document.getElementById("result-body");
+  const countEl = document.getElementById("count");
+
+  function renderTable(rows) {
+    tbody.innerHTML = "";
+    rows.forEach((r, idx) => tbody.appendChild(buildRow(r, idx)));
+    countEl.textContent = rows.length;
+    resultsEl.classList.add("show");
+    resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function buildRow(r, idx) {
+    const tr = document.createElement("tr");
+    const fields = ["maMH", "tenMH", "nhom", "soTC", "gv", "loai", "ngayBD", "ngayKT", "tiet", "phong", "ghiChu"];
+    fields.forEach(f => {
+      const td = document.createElement("td");
+      td.contentEditable = "true";
+      td.textContent = r[f] ?? "";
+      td.dataset.field = f;
+      td.dataset.idx = idx;
+      td.addEventListener("input", () => {
+        currentResults[parseInt(td.dataset.idx)][f] = td.textContent;
+      });
+      tr.appendChild(td);
+    });
+    const delTd = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.className = "row-del";
+    delBtn.textContent = "×";
+    delBtn.title = "Xóa dòng";
+    delBtn.addEventListener("click", () => {
+      const i = parseInt(tr.children[0].dataset.idx);
+      currentResults.splice(i, 1);
+      renderTable(currentResults);
+    });
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+    return tr;
+  }
+
+  document.getElementById("add-row").addEventListener("click", () => {
+    currentResults.push({
+      maMH: "", tenMH: "", nhom: "", soTC: "", gv: "",
+      loai: "Học chính thức", ngayBD: "", ngayKT: "",
+      tiet: "", phong: "", ghiChu: ""
+    });
+    renderTable(currentResults);
+  });
+
+  // ============== EXPORT ==============
+  const HEADERS = ["Mã MH", "Tên môn học", "Nhóm", "Số TC", "Giảng viên", "Email GV", "Loại sự kiện", "Ngày giờ bắt đầu", "Ngày giờ kết thúc", "Tiết", "Phòng", "Ghi chú", "Trạng thái", "ID Sự kiện"];
+
+  function rowsToMatrix(rows) {
+    // Khớp chính xác 15 cột của sheet LichHoc (bỏ STT vì Sheet tự đánh)
+    return rows.map(r => [
+      r.maMH || "",
+      r.tenMH || "",
+      r.nhom || "",
+      r.soTC || "",
+      r.gv || "",
+      "",                               // Email GV — trống
+      r.loai || "Học chính thức",
+      r.ngayBD || "",
+      r.ngayKT || "",
+      r.tiet || "",
+      r.phong || "",
+      r.ghiChu || "",
+      "",                               // Trạng thái
+      ""                                // ID sự kiện
+    ]);
+  }
+
+  document.getElementById("copy-tsv").addEventListener("click", async () => {
+    if (!currentResults.length) return;
+    const matrix = rowsToMatrix(currentResults);
+    // TSV — paste trực tiếp vào Sheet sẽ vào đúng cột
+    const tsv = matrix.map(row => row.join("\t")).join("\n");
+    try {
+      await navigator.clipboard.writeText(tsv);
+      toast(`Đã copy ${matrix.length} dòng. Vào Sheet, click ô cột B hàng trống đầu tiên, Ctrl+V.`);
+    } catch (e) {
+      toast("Không copy được. Thử tải CSV.", "error");
+    }
+  });
+
+  document.getElementById("download-csv").addEventListener("click", () => {
+    if (!currentResults.length) return;
+    const matrix = rowsToMatrix(currentResults);
+    const header = HEADERS.slice(0, 14);  // bỏ cột STT vì matrix không có
+    const escapeCell = v => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const csv = [
+      header.map(escapeCell).join(","),
+      ...matrix.map(row => row.map(escapeCell).join(","))
+    ].join("\n");
+    // BOM cho Excel hiểu UTF-8
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hutech_tkb_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Đã tải file CSV");
+  });
+
+  // ---------- EXCEL DOWNLOAD (dùng SheetJS) ----------
+  // Parse "dd/MM/yyyy HH:mm" thành JS Date để Excel nhận dạng kiểu date
+  function parseVnDateTime(s) {
+    if (!s) return null;
+    const m = String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
+  }
+
+  document.getElementById("download-xlsx").addEventListener("click", () => {
+    if (!currentResults.length) return;
+    const header = HEADERS.slice(0, 14);
+
+    // Ghép header + data, convert cell ngày giờ sang Date object
+    const dataRows = currentResults.map(r => {
+      const ngayBD = parseVnDateTime(r.ngayBD);
+      const ngayKT = parseVnDateTime(r.ngayKT);
+      return [
+        r.maMH || "",
+        r.tenMH || "",
+        r.nhom || "",
+        r.soTC === undefined || r.soTC === "" ? "" : Number(r.soTC) || r.soTC,
+        r.gv || "",
+        "",                                         // Email GV
+        r.loai || "Học chính thức",
+        ngayBD || r.ngayBD || "",                   // Date object nếu parse được
+        ngayKT || r.ngayKT || "",
+        r.tiet || "",
+        r.phong || "",
+        r.ghiChu || "",
+        "",                                         // Trạng thái
+        ""                                          // ID Sự kiện
+      ];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows], { cellDates: true });
+
+    // Format cột I, J (ngày giờ) — cell type 'd' + numFmt
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let R = 1; R <= range.e.r; R++) {
+      ["H", "I"].forEach(col => {  // cột H=index 7 (ngày BĐ), I=index 8 (ngày KT)
+        const addr = col + (R + 1);
+        const cell = ws[addr];
+        if (cell && cell.v instanceof Date) {
+          cell.t = "d";
+          cell.z = "dd/mm/yyyy hh:mm";
+        }
+      });
+    }
+
+    // Độ rộng cột (khớp sheet LichHoc)
+    ws["!cols"] = [
+      { wch: 10 },  // Mã MH
+      { wch: 40 },  // Tên môn học
+      { wch: 6 },   // Nhóm
+      { wch: 6 },   // Số TC
+      { wch: 18 },  // GV
+      { wch: 22 },  // Email GV
+      { wch: 18 },  // Loại sự kiện
+      { wch: 18 },  // Ngày BĐ
+      { wch: 18 },  // Ngày KT
+      { wch: 10 },  // Tiết
+      { wch: 14 },  // Phòng
+      { wch: 32 },  // Ghi chú
+      { wch: 14 },  // Trạng thái
+      { wch: 10 }   // ID Sự kiện
+    ];
+
+    // Freeze hàng header
+    ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "LichHoc");
+
+    const fname = `hutech_tkb_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast(`Đã tải ${fname}. Mở bằng Google Sheet để copy-paste.`);
+  });
+
+  // ============== TOAST ==============
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+  function toast(msg, kind) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    if (kind === "error") toastEl.style.background = "var(--red)";
+    else toastEl.style.background = "var(--plum)";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3200);
+  }
+</script>
+</body>
+</html>
